@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>COVID-19 Dashboard</title>
+
+		<style>
+			body
+			{
+				font-family: verdana;
+			}
+
+			div
+			{
+				outline: 0px solid red;
+			}
+
+			svg
+			{
+				width: 100%;
+				height: 100%;
+			}
+
+			.dashboardContainer
+			{
+				width: 800px;
+				height: 620px;
+				margin: 0 auto 0 auto;
+			}
+
+			.topContainer
+			{
+				width: 100%;
+				height: 250px;
+				float: left;
+			}
+
+			.middleContainer
+			{
+				width: 100%;
+				height: 50px;
+				margin-top: 10px;
+				float: left;
+			}
+
+			.bottomContainer
+			{
+				width: 100%;
+				height: 300px;
+				margin-top: 10px;
+				float: left;
+			}
+
+			.leftContainer
+			{
+				width: 395px;
+				height: 100%;
+				float: left;
+			}
+
+			.rightContainer
+			{
+				width: 395px;
+				height: 100%;
+				float: right;
+			}
+
+			.statContainer
+			{
+				width: 45%;
+				height: 40%;
+				float: left;
+				font-size: 0.8em;
+				font-weight: bold;	
+			}
+
+			.colSG { color: #FF0000; fill: #FF0000; stroke: #FF0000; }
+			.colMW { color: #9999FF; fill: #9999FF; stroke: #9999FF; }
+			.colImports { color: #44AA44; fill: #44AA44; stroke: #44AA44; }
+			.colDeaths { color: #999999; fill: #999999; stroke: #999999; }
+			.nofill { fill: #FFFFFF; }
+
+			.chartTitle
+			{
+				font: bold 16px verdana;
+				fill: rgba(0, 0, 0, 1);
+			}
+
+			.scaleLineChartTick, .scaleLineChartVertical, .scaleLineChartHorizontal, .scaleBarChartVertical
+            {
+                stroke: rgba(100, 100, 100, 1);
+                stroke-width: 1px;
+            } 
+
+            .scaleLineChartText
+            {
+                font: 8px verdana;
+                fill: rgba(100, 100, 100, 1);
+                text-anchor: end;
+            }
+
+            .donutChartText
+            {
+                font: bold 10px verdana;
+                fill: rgba(0, 0, 0, 1);
+                text-anchor: middle;
+            }
+		</style>
+
+		<script src="https://d3js.org/d3.v4.min.js"></script>
+	</head>
+
+	<body>
+		<div class="dashboardContainer">
+			<div class="topContainer">
+				<svg>
+					<text class="chartTitle">Monthly Cases</text>
+				</svg>
+			</div>
+
+			<div class="middleContainer">
+				<div class="leftContainer">
+					<p>
+						COVID-19 DASHBOARD
+						<input type="button" id="btnPrev" value="<<" />
+						<select id="ddlPeriod"></select>
+						<input type="button" id="btnNext" value=">>" />
+					</p>
+				</div>
+
+				<div class="rightContainer">
+					<div class="statContainer cb_sg colSG">
+						<input type="checkbox" onclick="dashboard.drawCharts();" checked/> Singapore Citizens
+					</div>
+					<div class="statContainer cb_mw colMW">
+						<input type="checkbox" onclick="dashboard.drawCharts();" checked/> Migrant Workers
+					</div>
+					<div class="statContainer cb_imports colImports">
+						<input type="checkbox" onclick="dashboard.drawCharts();" checked/> Imports
+					</div>
+					<div class="statContainer cb_deaths colDeaths">
+						<input type="checkbox" onclick="dashboard.drawCharts();" checked/> Deaths
+					</div>	
+				</div>
+			</div>
+
+			<div class="bottomContainer">
+				<div class="leftContainer">
+					<svg>
+
+					</svg>
+				</div>
+
+				<div class="rightContainer">
+					<svg>
+
+					</svg>
+				</div>
+			</div>
+		</div>
+
+		<script>
+			let dashboard = 
+			{
+				keys: [],
+				currentKey: undefined,
+				covidData: [],
+				totalSG: 0,
+				totalMW: 0,
+				totalImports: 0,
+				totalDeaths: 0,
+				getKey: function(x) 
+				{
+					var elems = x.split("/");
+					var year = elems[0];
+					var month = parseInt(elems[1]) - 1;
+					var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+					return monthNames[month] + " " + year;
+				},
+				getStatColor: function(statname) 
+				{
+					let obj = dashboard.stats.filter((x) => {return x.stat == statname});
+					return obj[0].color;
+				},
+				prev: function()
+				{
+					var currentVal = parseInt(d3.select("#ddlPeriod").node().value);
+					if (currentVal > 0)
+					{
+						currentVal = currentVal - 1;
+						d3.select("#ddlPeriod").property("value", currentVal);
+					}
+				},
+				next: function()
+				{
+					var currentVal = parseInt(d3.select("#ddlPeriod").node().value);
+					if (currentVal < this.keys.length - 1)
+					{
+						currentVal = currentVal + 1;
+						d3.select("#ddlPeriod").property("value", currentVal);
+					}
+				},
+				drawCharts: function() 
+				{
+					var ddlPeriod = d3.select("#ddlPeriod");
+					var sg = d3.select(".cb_sg input[type=checkbox]").property("checked"); 
+					var mw = d3.select(".cb_mw input[type=checkbox]").property("checked");
+					var imports = d3.select(".cb_imports input[type=checkbox]").property("checked");
+					var deaths = d3.select(".cb_deaths input[type=checkbox]").property("checked");
+					
+					var svgDonutChart = d3.select(".bottomContainer .leftContainer svg");
+					var svgBarChart = d3.select(".bottomContainer .rightContainer svg");
+
+					var data = this.covidData[this.keys[ddlPeriod.node().value]];
+
+					dashboard.drawLineChart(data, sg, mw, imports, deaths);
+					dashboard.drawDonutChart(data, sg, mw, imports);
+					dashboard.drawBarChart(data, sg, mw, imports, deaths);
+				},
+				drawLineChart: function(data, sg, mw, imports, deaths) 
+				{
+					var svgLineChart = d3.select(".topContainer svg");
+					svgLineChart.html("");
+					
+		        	var maxSG = 0;
+		        	var maxMW = 0;
+		        	var maxImports = 0;
+		        	var maxDeaths = 0;
+
+		        	arrSG = [];
+		        	arrMW = [];
+		        	arrImports = [];
+		        	arrDeaths = [];
+
+				    for (var i = 0; i < data.length; i++) 
+				    {
+				    	arrSG.push(parseInt(data[i].sg));
+				    	arrMW.push(parseInt(data[i].mw));
+				    	arrImports.push(parseInt(data[i].imports));
+				    	arrDeaths.push(parseInt(data[i].deaths));
+				    }
+
+		        	if (sg) {
+			            maxSG = d3.max(arrSG);
+		        	}
+
+		        	if (mw) {
+			            maxMW = d3.max(arrMW);	
+		        	}
+
+		        	if (imports) {
+			            maxImports = d3.max(arrImports);	
+		        	}
+
+		        	if (deaths) {
+			            maxDeaths = d3.max(arrDeaths);	
+		        	}
+
+		        	var scaleLineChartMax = d3.max([maxSG, maxMW, maxImports, maxDeaths]);
+		        	
+		        	scaleLineChartMax = scaleLineChartMax * 1.2;
+
+	                var scaleData = [];
+	                var unitGrouping = 2;
+	                if (scaleLineChartMax > 10) unitGrouping = 5;
+	                if (scaleLineChartMax > 100) unitGrouping = 50;
+	                if (scaleLineChartMax > 1000) unitGrouping = 500;
+
+	                for (var i = 0; i <= scaleLineChartMax; i += unitGrouping)
+	                {
+	                    scaleData.push(i);
+	                }
+
+	                var unitSize = 250 / (scaleData.length - 1 > 0 ? scaleData.length - 1 : 1);
+	                var unitSpace = 700 / 31;
+
+	                svgLineChart
+	                .append("text")
+	                .attr("class", "chartTitle")
+	                .attr("x", "650px")
+	                .attr("y", "20px")
+	                .text("Monthly Cases");
+
+	                svgLineChart.selectAll("line.scaleLineChartTick")
+	                .data(scaleData)
+	                .enter()
+	                .append("line")
+	                .attr("class", "scaleLineChartTick")
+	                .attr("x1", "40px")
+	                .attr("y1", function(d, i) 
+	                {
+	                    return (i * unitSize) + "px";
+	                })
+					.attr("x2", "50px")
+	                .attr("y2", function(d, i) 
+	                {
+	                    return (i * unitSize) + "px";
+	                });
+
+	                svgLineChart.selectAll("text.scaleLineChartText")
+	                .data(scaleData)
+	                .enter()
+	                .append("text")
+	                .attr("class", "scaleLineChartText")
+	                .attr("x", "30px")
+	                .attr("y", function(d, i) 
+	                {
+	                    return (i * unitSize) + "px";
+	                })
+	                .text(function(d, i) 
+	                {
+	                    return scaleData[scaleData.length - i -1];
+	                });
+
+	                svgLineChart
+	                .append("line")
+	                .attr("class", "scaleLineChartVertical")
+	                .attr("x1", "50px")
+	                .attr("y1", "0px")
+	                .attr("x2", "50px")
+	                .attr("y2", "250px");
+
+	                svgLineChart
+	                .append("line")
+	                .attr("class", "scaleLineChartHorizontal")
+	                .attr("x1", "50px")
+	                .attr("y1", "250px")
+	                .attr("x2", "750px")
+	                .attr("y2", "250px");
+
+	                if (sg) 
+	                {
+		                svgLineChart.selectAll("circle.colSG")
+		                .data(arrSG)
+		                .enter()
+		                .append("circle")
+		                .attr("class", "colSG")
+		                .attr("cx", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("cy", "250px")
+		                .attr("r", function(d) 
+		                {
+		                    return "0px";
+		                })
+		                .transition()
+		                .duration(500)
+		                .attr("cy", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("r", "3px");
+
+		                svgLineChart.selectAll("line.colSG")
+		                .data(arrSG)
+		                .enter()
+		                .append("line")
+		                .attr("class", "colSG")
+		                .attr("x1", function(d, i) 
+		                {
+		                    var val = i;
+
+		                    if (i > 0)
+		                    {
+		                        val = val - 1;                   
+		                    }
+
+		                    return (val * unitSpace + 80) + "px";
+		                })
+		                .attr("y1", "250px")
+		                .attr("x2", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("y2", "250px")
+		                .transition()
+		                .duration(500)
+		                .attr("y1", function(d, i) 
+		                {
+		                    var val = d;
+
+		                    if (i > 0)
+		                    {
+		                        val = arrSG[i - 1];
+		                    }
+
+		                    return (250 - (val * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("y2", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                });
+	                }
+
+	                if (mw) 
+	                {
+		                svgLineChart.selectAll("circle.colMW")
+		                .data(arrMW)
+		                .enter()
+		                .append("circle")
+		                .attr("class", "colMW")
+		                .attr("cx", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("cy", "250px")
+		                .attr("r", function(d) 
+		                {
+		                    return "0px";
+		                })
+		                .transition()
+		                .duration(500)
+		                .attr("cy", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("r", "3px");
+
+		                svgLineChart.selectAll("line.colMW")
+		                .data(arrMW)
+		                .enter()
+		                .append("line")
+		                .attr("class", "colMW")
+		                .attr("x1", function(d, i) 
+		                {
+		                    var val = i;
+
+		                    if (i > 0)
+		                    {
+		                        val = val - 1;                   
+		                    }
+
+		                    return (val * unitSpace + 80) + "px";
+		                })
+		                .attr("y1", "250px")
+		                .attr("x2", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("y2", "250px")
+		                .transition()
+		                .duration(500)
+		                .attr("y1", function(d, i) 
+		                {
+		                    var val = d;
+
+		                    if (i > 0)
+		                    {
+		                        val = arrMW[i - 1];
+		                    }
+
+		                    return (250 - (val * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("y2", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                }); 
+	                }
+
+	                if (imports) 
+	                {
+		                svgLineChart.selectAll("circle.colImports")
+		                .data(arrImports)
+		                .enter()
+		                .append("circle")
+		                .attr("class", "colImports")
+		                .attr("cx", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("cy", "250px")
+		                .attr("r", function(d) 
+		                {
+		                    return "0px";
+		                })
+		                .transition()
+		                .duration(500)
+		                .attr("cy", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("r", "3px");
+
+		                svgLineChart.selectAll("line.colImports")
+		                .data(arrImports)
+		                .enter()
+		                .append("line")
+		                .attr("class", "colImports")
+		                .attr("x1", function(d, i) 
+		                {
+		                    var val = i;
+
+		                    if (i > 0)
+		                    {
+		                        val = val - 1;                   
+		                    }
+
+		                    return (val * unitSpace + 80) + "px";
+		                })
+		                .attr("y1", "250px")
+		                .attr("x2", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("y2", "250px")
+		                .transition()
+		                .duration(500)
+		                .attr("y1", function(d, i) 
+		                {
+		                    var val = d;
+
+		                    if (i > 0)
+		                    {
+		                        val = arrImports[i - 1];
+		                    }
+
+		                    return (250 - (val * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("y2", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                }); 
+	                }
+
+	                if (deaths) 
+	                {
+		                svgLineChart.selectAll("circle.colDeaths")
+		                .data(arrDeaths)
+		                .enter()
+		                .append("circle")
+		                .attr("class", "colDeaths")
+		                .attr("cx", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("cy", "250px")
+		                .attr("r", function(d) 
+		                {
+		                    return "0px";
+		                })
+		                .transition()
+		                .duration(500)
+		                .attr("cy", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("r", "3px");
+
+		                svgLineChart.selectAll("line.colDeaths")
+		                .data(arrDeaths)
+		                .enter()
+		                .append("line")
+		                .attr("class", "colDeaths")
+		                .attr("x1", function(d, i) 
+		                {
+		                    var val = i;
+
+		                    if (i > 0)
+		                    {
+		                        val = val - 1;                   
+		                    }
+
+		                    return (val * unitSpace + 80) + "px";
+		                })
+		                .attr("y1", "250px")
+		                .attr("x2", function(d, i) 
+		                {
+		                    return (i * unitSpace + 80) + "px";
+		                })
+		                .attr("y2", "250px")
+		                .transition()
+		                .duration(500)
+		                .attr("y1", function(d, i) 
+		                {
+		                    var val = d;
+
+		                    if (i > 0)
+		                    {
+		                        val = arrDeaths[i - 1];
+		                    }
+
+		                    return (250 - (val * (unitSize / unitGrouping))) + "px";
+		                })
+		                .attr("y2", function(d) 
+		                {
+		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
+		                }); 
+	                }
+				},
+				drawDonutChart: function(data, sg, mw, imports) {
+					var svgDonutChart = d3.select(".bottomContainer .leftContainer svg");
+					svgDonutChart
+					.html("")
+	                .append("g")
+	                .attr("transform", "translate(200, 150)");
+
+	                svgDonutChart = d3.select(".bottomContainer .leftContainer svg g");
+
+		        	var arrSG = [];
+		        	var arrMW = [];
+		        	var arrImports = [];
+
+				    for (var i = 0; i < data.length; i++) 
+				    {
+				    	if (sg) arrSG.push(parseInt(data[i].sg));
+				    	if (mw) arrMW.push(parseInt(data[i].mw));
+				    	if (imports) arrImports.push(parseInt(data[i].imports));
+				    }
+
+				    var arrTotals = [];
+				    if (sg) arrTotals.push({ value: d3.sum(arrSG), class: "colSG"});
+				    if (mw) arrTotals.push({ value: d3.sum(arrMW), class: "colMW"});
+				    if (imports) arrTotals.push({ value: d3.sum(arrImports), class: "colImports" });
+
+				    var total = d3.sum([d3.sum(arrSG), d3.sum(arrMW), d3.sum(arrImports)]);
+
+	                var pie = 
+	                d3.pie()
+	                .value(function(d) 
+	                {
+	                    return d.value; 
+	                });
+
+					var pieData = pie(arrTotals);
+					const f = d3.format(".2f");
+
+	                var zeroArc = 
+	                d3.arc()
+	                .innerRadius(0)
+	                .outerRadius(50);
+
+	                var arc = 
+	                d3.arc()
+	                .innerRadius(100)
+	                .outerRadius(150);
+
+	                svgDonutChart
+	                .selectAll("path")
+	                .data(pieData)
+	                .enter()
+	                .append("path")
+	                .attr("d", zeroArc)
+	                .attr("class", function(d, i) {
+	                    return d.data.class;
+	                })
+	                .transition()
+	                .duration(500)
+	                .attr("d", arc);
+
+	                svgDonutChart
+	                .selectAll("text.donutChartText")
+	                .data(pieData)
+	                .enter()
+	                .append("text")
+	                .attr("class", "donutChartText")
+	                .attr("x", function(d) 
+	                {
+	                    var midpoint = d.startAngle + ((d.endAngle - d.startAngle) / 2);
+	                    return d3.pointRadial(midpoint, 120)[0];
+	                })
+	                .attr("y", function(d) 
+	                {
+	                    var midpoint = d.startAngle + ((d.endAngle - d.startAngle) / 2);
+	                    return d3.pointRadial(midpoint, 120)[1]; 
+	                })
+	                .text(function(d) 
+	                {
+	                    return f(d.value / total * 100) + "%";
+	                });
+				},
+				drawBarChart: function(data, sg, mw, imports, deaths) {
+					var svgBarChart = d3.select(".bottomContainer .rightContainer svg");
+					svgBarChart.html("");
+
+	                svgBarChart
+	                .append("line")
+	                .attr("class", "scaleBarChartVertical")
+	                .attr("x1", "5px")
+	                .attr("y1", "0px")
+	                .attr("x2", "5px")
+	                .attr("y2", "295px");
+	                
+	                var maxVal = 0;
+		        	var maxSG = (sg ? dashboard.totalSG : 0);
+		        	var maxMW = (mw ? dashboard.totalMW : 0);
+		        	var maxImports = (imports ? dashboard.totalImports : 0);
+		        	var maxDeaths = (deaths ? dashboard.totalDeaths : 0);
+
+	                var maxVal = d3.max([maxSG, maxMW, maxImports, maxDeaths]);
+	                var unitSize = 350 / maxVal;
+
+		        	var arrSG = [];
+		        	var arrMW = [];
+		        	var arrImports = [];
+		        	var arrDeaths = [];
+
+				    for (var i = 0; i < data.length; i++) 
+				    {
+				    	if (sg) arrSG.push(parseInt(data[i].sg));
+				    	if (mw) arrMW.push(parseInt(data[i].mw));
+				    	if (imports) arrImports.push(parseInt(data[i].imports));
+				    	if (deaths) arrDeaths.push(parseInt(data[i].deaths));
+				    }
+
+	                if (sg) 
+	                {
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colSG nofill")
+		                .attr("x", "5px")
+		                .attr("y", "50px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (maxSG * unitSize + 5) + "px");
+
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colSG")
+		                .attr("x", "5px")
+		                .attr("y", "50px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (d3.sum(arrSG) * unitSize + 5) + "px");
+	                }
+
+	                if (mw) 
+	                {
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colMW nofill")
+		                .attr("x", "5px")
+		                .attr("y", "115px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (maxMW * unitSize + 5) + "px");
+
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colMW")
+		                .attr("x", "5px")
+		                .attr("y", "115px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (d3.sum(arrMW) * unitSize + 5) + "px");
+	                }
+
+	                if (imports) 
+	                {
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colImports nofill")
+		                .attr("x", "5px")
+		                .attr("y", "180px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (maxImports * unitSize + 5) + "px");
+
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colImports")
+		                .attr("x", "5px")
+		                .attr("y", "180px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (d3.sum(arrImports) * unitSize + 5) + "px");
+	                }
+
+	                if (deaths) 
+	                {
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colDeaths nofill")
+		                .attr("x", "5px")
+		                .attr("y", "245px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (maxDeaths * unitSize + 5) + "px");
+
+		                svgBarChart
+		                .append("rect")
+		                .attr("class", "colDeaths")
+		                .attr("x", "5px")
+		                .attr("y", "245px")
+		                .attr("height", "50px")
+		                .attr("width", "0px")
+		                .transition()
+		                .duration(500)
+		                .attr("width", (d3.sum(arrDeaths) * unitSize + 5) + "px");
+	                }
+				}
+			};
+
+			d3.csv("covid19.csv", function(data) 
+			{
+			    for (var i = 0; i < data.length; i++) 
+			    {
+			        key = dashboard.getKey(data[i].Day);
+
+			        if (dashboard.currentKey == undefined) 
+			        {
+			        	dashboard.currentKey = key;
+			        	dashboard.covidData[key] = [];
+			        	dashboard.keys.push(key);
+			        }
+			        else
+			        {
+			        	if (dashboard.currentKey != key)
+			        	{
+			        		dashboard.currentKey = key;
+			        		dashboard.covidData[key] = [];
+			        		dashboard.keys.push(key);
+			        	}
+			        }	
+
+			        dashboard.covidData[key].push({"sg": data[i].SG, "imports": data[i].Imports, "mw": data[i].MW, "deaths": data[i].Deaths});
+
+			        dashboard.totalSG = dashboard.totalSG + parseInt(data[i].SG);
+			        dashboard.totalMW = dashboard.totalMW + parseInt(data[i].MW);
+			        dashboard.totalImports = dashboard.totalImports + parseInt(data[i].Imports);
+			        dashboard.totalDeaths = dashboard.totalDeaths + parseInt(data[i].Deaths);
+			    }
+
+		        var ddlPeriod = d3.select("#ddlPeriod");
+
+		        ddlPeriod.selectAll("option")
+		        .data(dashboard.keys)
+		        .enter()
+		        .append("option")
+		        .property("selected", function(d, i) 
+		        {
+		            return i == 0;
+		        })
+		        .attr("value", function(d, i) 
+		        {
+		            return i;
+		        })
+		        .text(function(d) 
+		        {
+		            return d;
+		        });
+
+		        dashboard.drawCharts();
+
+		        d3.select("#ddlPeriod").on("change", function() { dashboard.drawCharts(); });
+		        d3.select("#btnPrev").on("click", function() { dashboard.prev(); dashboard.drawCharts(); });
+		        d3.select("#btnNext").on("click", function() { dashboard.next(); dashboard.drawCharts(); });
+		        //button events
+
+		        //cb events
+			});
+		</script>
+	</body>
+</html>
