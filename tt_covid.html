@@ -274,13 +274,6 @@
 	                var unitSize = 250 / (scaleData.length - 1 > 0 ? scaleData.length - 1 : 1);
 	                var unitSpace = 700 / 31;
 
-	                svgLineChart
-	                .append("text")
-	                .attr("class", "chartTitle")
-	                .attr("x", "650px")
-	                .attr("y", "20px")
-	                .text("Monthly Cases");
-
 	                svgLineChart.selectAll("line.scaleLineChartTick")
 	                .data(scaleData)
 	                .enter()
@@ -375,7 +368,7 @@
 		                })
 		                .attr("y2", "250px")
 		                .transition()
-		                .duration(500)
+		                .duration(1500)
 		                .attr("y1", function(d, i) 
 		                {
 		                    var val = d;
@@ -440,7 +433,7 @@
 		                })
 		                .attr("y2", "250px")
 		                .transition()
-		                .duration(500)
+		                .duration(1500)
 		                .attr("y1", function(d, i) 
 		                {
 		                    var val = d;
@@ -505,7 +498,7 @@
 		                })
 		                .attr("y2", "250px")
 		                .transition()
-		                .duration(500)
+		                .duration(1500)
 		                .attr("y1", function(d, i) 
 		                {
 		                    var val = d;
@@ -570,7 +563,7 @@
 		                })
 		                .attr("y2", "250px")
 		                .transition()
-		                .duration(500)
+		                .duration(1500)
 		                .attr("y1", function(d, i) 
 		                {
 		                    var val = d;
@@ -587,6 +580,13 @@
 		                    return (250 - (d * (unitSize / unitGrouping))) + "px";
 		                }); 
 	                }
+
+	                svgLineChart
+	                .append("text")
+	                .attr("class", "chartTitle")
+	                .attr("x", "650px")
+	                .attr("y", "20px")
+	                .text("Monthly Cases");
 				},
 				drawDonutChart: function(data, sg, mw, imports) {
 					var svgDonutChart = d3.select(".bottomContainer .leftContainer svg");
@@ -627,8 +627,8 @@
 
 	                var zeroArc = 
 	                d3.arc()
-	                .innerRadius(0)
-	                .outerRadius(50);
+	                .innerRadius(50)
+	                .outerRadius(150);
 
 	                var arc = 
 	                d3.arc()
@@ -659,15 +659,29 @@
 	                    var midpoint = d.startAngle + ((d.endAngle - d.startAngle) / 2);
 	                    return d3.pointRadial(midpoint, 120)[0];
 	                })
-	                .attr("y", function(d) 
+	                .attr("y", function(d, i) 
 	                {
 	                    var midpoint = d.startAngle + ((d.endAngle - d.startAngle) / 2);
-	                    return d3.pointRadial(midpoint, 120)[1]; 
+	                    return d3.pointRadial(midpoint, 100 + (i * 10))[1]; 
 	                })
 	                .text(function(d) 
 	                {
 	                    return f(d.value / total * 100) + "%";
 	                });
+
+	                svgDonutChart
+	                .append("text")
+	                .attr("class", "chartTitle")
+	                .attr("x", "-50px")
+	                .attr("y", "0px")
+	                .text("Case Types");
+
+	                svgDonutChart
+	                .append("text")
+	                .attr("class", "donutChartText")
+	                .attr("x", "-5px")
+	                .attr("y", "20px")
+	                .text(total + " cases");
 				},
 				drawBarChart: function(data, sg, mw, imports, deaths) {
 					var svgBarChart = d3.select(".bottomContainer .rightContainer svg");
@@ -714,7 +728,7 @@
 		                .attr("width", "0px")
 		                .transition()
 		                .duration(500)
-		                .attr("width", (maxSG * unitSize + 5) + "px");
+		                .attr("width", (maxSG * unitSize) + "px");
 
 		                svgBarChart
 		                .append("rect")
@@ -725,7 +739,7 @@
 		                .attr("width", "0px")
 		                .transition()
 		                .duration(500)
-		                .attr("width", (d3.sum(arrSG) * unitSize + 5) + "px");
+		                .attr("width", (d3.sum(arrSG) * unitSize) + "px");
 	                }
 
 	                if (mw) 
@@ -739,7 +753,7 @@
 		                .attr("width", "0px")
 		                .transition()
 		                .duration(500)
-		                .attr("width", (maxMW * unitSize + 5) + "px");
+		                .attr("width", (maxMW * unitSize) + "px");
 
 		                svgBarChart
 		                .append("rect")
@@ -749,8 +763,8 @@
 		                .attr("height", "50px")
 		                .attr("width", "0px")
 		                .transition()
-		                .duration(500)
-		                .attr("width", (d3.sum(arrMW) * unitSize + 5) + "px");
+		                .duration(1500)
+		                .attr("width", (d3.sum(arrMW) * unitSize) + "px");
 	                }
 
 	                if (imports) 
@@ -764,7 +778,7 @@
 		                .attr("width", "0px")
 		                .transition()
 		                .duration(500)
-		                .attr("width", (maxImports * unitSize + 5) + "px");
+		                .attr("width", (maxImports * unitSize) + "px");
 
 		                svgBarChart
 		                .append("rect")
@@ -774,8 +788,8 @@
 		                .attr("height", "50px")
 		                .attr("width", "0px")
 		                .transition()
-		                .duration(500)
-		                .attr("width", (d3.sum(arrImports) * unitSize + 5) + "px");
+		                .duration(1500)
+		                .attr("width", (d3.sum(arrImports) * unitSize) + "px");
 	                }
 
 	                if (deaths) 
@@ -789,7 +803,7 @@
 		                .attr("width", "0px")
 		                .transition()
 		                .duration(500)
-		                .attr("width", (maxDeaths * unitSize + 5) + "px");
+		                .attr("width", (maxDeaths * unitSize) + "px");
 
 		                svgBarChart
 		                .append("rect")
@@ -799,9 +813,18 @@
 		                .attr("height", "50px")
 		                .attr("width", "0px")
 		                .transition()
-		                .duration(500)
-		                .attr("width", (d3.sum(arrDeaths) * unitSize + 5) + "px");
+		                .duration(1500)
+		                .attr("width", (d3.sum(arrDeaths) * unitSize) + "px");
 	                }
+
+	                svgBarChart
+	                .append("text")
+	                .attr("class", "chartTitle")
+	                .attr("x", "10px")
+	                .attr("y", "20px")
+	                .text("Cases vs Total");
+
+	                console.log(maxDeaths, d3.sum(arrDeaths))
 				}
 			};
 
@@ -859,9 +882,6 @@
 		        d3.select("#ddlPeriod").on("change", function() { dashboard.drawCharts(); });
 		        d3.select("#btnPrev").on("click", function() { dashboard.prev(); dashboard.drawCharts(); });
 		        d3.select("#btnNext").on("click", function() { dashboard.next(); dashboard.drawCharts(); });
-		        //button events
-
-		        //cb events
 			});
 		</script>
 	</body>
