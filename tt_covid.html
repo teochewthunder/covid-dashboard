@@ -104,6 +104,13 @@
                 fill: rgba(0, 0, 0, 1);
                 text-anchor: middle;
             }
+
+            .barChartText
+            {
+                font: bold 10px verdana;
+                fill: rgba(0, 0, 0, 1);
+                text-anchor: end;
+            }
 		</style>
 
 		<script src="https://d3js.org/d3.v4.min.js"></script>
@@ -694,6 +701,8 @@
 	                .attr("y1", "0px")
 	                .attr("x2", "5px")
 	                .attr("y2", "295px");
+
+	                const f = d3.format(".2f");
 	                
 	                var maxVal = 0;
 		        	var maxSG = (sg ? dashboard.totalSG : 0);
@@ -740,6 +749,13 @@
 		                .transition()
 		                .duration(500)
 		                .attr("width", (d3.sum(arrSG) * unitSize) + "px");
+
+		                svgBarChart
+		                .append("text")
+		                .attr("class", "barChartText")
+		                .attr("x", "350px")
+		                .attr("y", "80px")
+		                .text(d3.sum(arrSG) + " of " + maxSG + " (" + f(d3.sum(arrSG) / maxSG * 100) + "%)");
 	                }
 
 	                if (mw) 
@@ -765,6 +781,13 @@
 		                .transition()
 		                .duration(1500)
 		                .attr("width", (d3.sum(arrMW) * unitSize) + "px");
+
+		                svgBarChart
+		                .append("text")
+		                .attr("class", "barChartText")
+		                .attr("x", "350px")
+		                .attr("y", "145px")
+		                .text(d3.sum(arrMW) + " of " + maxMW + " (" + f(d3.sum(arrMW) / maxMW * 100) + "%)");
 	                }
 
 	                if (imports) 
@@ -790,6 +813,13 @@
 		                .transition()
 		                .duration(1500)
 		                .attr("width", (d3.sum(arrImports) * unitSize) + "px");
+
+		                svgBarChart
+		                .append("text")
+		                .attr("class", "barChartText")
+		                .attr("x", "350px")
+		                .attr("y", "210px")
+		                .text(d3.sum(arrImports) + " of " + maxImports + " (" + f(d3.sum(arrImports) / maxImports * 100) + "%)");
 	                }
 
 	                if (deaths) 
@@ -815,6 +845,13 @@
 		                .transition()
 		                .duration(1500)
 		                .attr("width", (d3.sum(arrDeaths) * unitSize) + "px");
+
+		                svgBarChart
+		                .append("text")
+		                .attr("class", "barChartText")
+		                .attr("x", "350px")
+		                .attr("y", "275px")
+		                .text(d3.sum(arrDeaths) + " of " + maxDeaths + " (" + f(d3.sum(arrDeaths) / maxDeaths * 100) + "%)");
 	                }
 
 	                svgBarChart
@@ -822,7 +859,7 @@
 	                .attr("class", "chartTitle")
 	                .attr("x", "10px")
 	                .attr("y", "20px")
-	                .text("Cases vs Total");
+	                .text("This Month's Cases vs Total");
 				}
 			};
 
