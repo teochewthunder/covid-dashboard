@@ -84,12 +84,12 @@
 				font: bold 16px verdana;
 				fill: rgba(0, 0, 0, 1);
 			}
-
+			
 			.scaleLineChartTick, .scaleLineChartVertical, .scaleLineChartHorizontal, .scaleBarChartVertical
             {
                 stroke: rgba(100, 100, 100, 1);
                 stroke-width: 1px;
-            } 
+            }  
 
             .scaleLineChartText
             {
@@ -120,7 +120,7 @@
 		<div class="dashboardContainer">
 			<div class="topContainer">
 				<svg>
-					<text class="chartTitle">Monthly Cases</text>
+
 				</svg>
 			</div>
 
@@ -184,11 +184,6 @@
 
 					return monthNames[month] + " " + year;
 				},
-				getStatColor: function(statname) 
-				{
-					let obj = dashboard.stats.filter((x) => {return x.stat == statname});
-					return obj[0].color;
-				},
 				prev: function()
 				{
 					var currentVal = parseInt(d3.select("#ddlPeriod").node().value);
@@ -214,9 +209,6 @@
 					var mw = d3.select(".cb_mw input[type=checkbox]").property("checked");
 					var imports = d3.select(".cb_imports input[type=checkbox]").property("checked");
 					var deaths = d3.select(".cb_deaths input[type=checkbox]").property("checked");
-					
-					var svgDonutChart = d3.select(".bottomContainer .leftContainer svg");
-					var svgBarChart = d3.select(".bottomContainer .rightContainer svg");
 
 					var data = this.covidData[this.keys[ddlPeriod.node().value]];
 
@@ -234,10 +226,10 @@
 		        	var maxImports = 0;
 		        	var maxDeaths = 0;
 
-		        	arrSG = [];
-		        	arrMW = [];
-		        	arrImports = [];
-		        	arrDeaths = [];
+		        	var arrSG = [];
+		        	var arrMW = [];
+		        	var arrImports = [];
+		        	var arrDeaths = [];
 
 				    for (var i = 0; i < data.length; i++) 
 				    {
@@ -247,24 +239,27 @@
 				    	arrDeaths.push(parseInt(data[i].deaths));
 				    }
 
-		        	if (sg) {
+		        	if (sg) 
+		        	{
 			            maxSG = d3.max(arrSG);
 		        	}
 
-		        	if (mw) {
+		        	if (mw) 
+		        	{
 			            maxMW = d3.max(arrMW);	
 		        	}
 
-		        	if (imports) {
+		        	if (imports) 
+		        	{
 			            maxImports = d3.max(arrImports);	
 		        	}
 
-		        	if (deaths) {
+		        	if (deaths) 
+		        	{
 			            maxDeaths = d3.max(arrDeaths);	
 		        	}
 
 		        	var scaleLineChartMax = d3.max([maxSG, maxMW, maxImports, maxDeaths]);
-		        	
 		        	scaleLineChartMax = scaleLineChartMax * 1.2;
 
 	                var scaleData = [];
@@ -676,21 +671,22 @@
 	                    return f(d.value / total * 100) + "%";
 	                });
 
-	                svgDonutChart
-	                .append("text")
-	                .attr("class", "chartTitle")
-	                .attr("x", "-50px")
-	                .attr("y", "0px")
-	                .text("Case Types");
+					svgDonutChart
+					.append("text")
+					.attr("class", "chartTitle")
+					.attr("x", "-50px")
+					.attr("y", "0px")
+					.text("Case Types");
 
-	                svgDonutChart
-	                .append("text")
-	                .attr("class", "donutChartText")
-	                .attr("x", "-5px")
-	                .attr("y", "20px")
-	                .text(total + " cases");
+					svgDonutChart
+					.append("text")
+					.attr("class", "donutChartText")
+					.attr("x", "-5px")
+					.attr("y", "20px")
+					.text(total + " cases");
 				},
-				drawBarChart: function(data, sg, mw, imports, deaths) {
+				drawBarChart: function(data, sg, mw, imports, deaths) 
+				{
 					var svgBarChart = d3.select(".bottomContainer .rightContainer svg");
 					svgBarChart.html("");
 
@@ -703,8 +699,7 @@
 	                .attr("y2", "295px");
 
 	                const f = d3.format(".2f");
-	                
-	                var maxVal = 0;
+
 		        	var maxSG = (sg ? dashboard.totalSG : 0);
 		        	var maxMW = (mw ? dashboard.totalMW : 0);
 		        	var maxImports = (imports ? dashboard.totalImports : 0);
@@ -867,7 +862,7 @@
 			{
 			    for (var i = 0; i < data.length; i++) 
 			    {
-			        key = dashboard.getKey(data[i].Day);
+			        var key = dashboard.getKey(data[i].Day);
 
 			        if (dashboard.currentKey == undefined) 
 			        {
