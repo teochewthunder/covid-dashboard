@@ -15,7 +15,7 @@ This is day-to-day statistics.
 This is total proportion of statistics for that month.
 
 ## Bar Chart
-This is total statistics for that mnth compared to total of entire dataset.
+This is total statistics for that month compared to total of entire dataset.
 
 ## Styling
 `colSG`, `colMW`, `colImports` and `colDeaths` are CSS styles that determine the colors used by the various data points - `outline`, `fill` and `color` properties.
